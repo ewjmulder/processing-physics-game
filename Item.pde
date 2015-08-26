@@ -24,8 +24,8 @@ public class Item {
     this.gridY = gridY;
   }
   
-  public ItemType getItemType() {
-    return this.itemType;
+  public ItemType getType() {
+    return this.type;
   }
   
   public String getName() {

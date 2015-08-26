@@ -71,6 +71,11 @@ void setup() {
   currentLevel.addFixedItem(new Item(ItemType.WOODEN_BEAM, 15, 16));
   currentLevel.addFixedItem(new Item(ItemType.SOCCER_BALL, 14, 6));
 
+  Inventory inventory = new Inventory();
+  inventory.add(new Item(ItemType.WOODEN_BEAM));
+  inventory.add(new Item(ItemType.WOODEN_BEAM));
+  inventory.add(new Item(ItemType.SOCCER_BALL));
+  
 
 //  woodenBeamImage = loadImage("items/wooden_beam.png");
 //  ballImage = loadImage("items/soccer_ball.png");
