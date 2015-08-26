@@ -765,13 +765,18 @@ Physics = function (sketch, screenW,  screenH,
                         // Note: custom modification to allow for pausing and setting a different speed.
                         /* PREVIOUS CODE
 			var timeStep = 1.0/60;
+                        var iteration = 1;
+                        this.m_world.Step(timeStep);
                         */
                         /* START Modification */
                         var timeStep = physics.m_sketch.getStepSize();
+                        var iteration = physics.m_sketch.getIterationsPerStep();
+
+                        for (var i = 0; i < iteration; i++) {
+			  this.m_world.Step(timeStep, 1);
+                        }
                         /* END Modification */
 
-			var iteration = 1;
-			this.m_world.Step(timeStep, iteration);
 			//console.log("stepping");
 		},
 		

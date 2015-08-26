@@ -1,9 +1,11 @@
 public class Inventory {
-  
+
+  private List<ItemType> allTypes;
   private List<Item> itemsInInventory;
   private List<Item> itemsUsed;
   
   public Inventory() {
+    this.allTypes = new ArrayList<ItemType>();
     this.itemsInInventory = new ArrayList<Item>();
     this.itemsUsed = new ArrayList<Item>();
   }
@@ -15,6 +17,9 @@ public class Inventory {
   public void add(ItemType itemType, int amount) {
     for (int i = 0; i < amount; i++) {
       this.itemsInInventory.add(new Item(itemType));
+    }
+    if (!this.allTypes.contains(itemType)) {
+      this.allTypes.add(itemType);
     }
   }
 
@@ -38,26 +43,25 @@ public class Inventory {
     if (!this.itemsUsed.contains(item)) {
       console.error("Stop using an item that is not in the itemsUsed");
     }
-    item.resetPosition();
+    item.resetGridPosition();
     this.itemsUsed.remove(item);
     this.itemsInInventory.add(item);
   }
-    
+  
+  public List<Item> getItemsInUse() {
+    return this.itemsUsed;
+  }
 
-  // TODO: guarantee ordering  
+  public List<Item> getItemsNotInUse() {
+    return this.itemsInInventory;
+  }
+
   public List<ItemType> getAllTypes() {
-    List<ItemType> allTypes = new ArrayList<ItemType>();
-    for (Item item : this.itemsInInventory) {
-      if (!allTypes.contains(item.getType())) {
-        allTypes.add(item.getType());
-      }
-    }
-    for (Item item : this.itemsUsed) {
-      if (!allTypes.contains(item.getType())) {
-        allTypes.add(item.getType());
-      }
-    }
-    return allTypes;
+    return this.allTypes;
+  }
+  
+  public int countTypes() {
+    return this.getAllTypes().size();
   }
   
   public int getAmountInInventory(ItemType type) {
