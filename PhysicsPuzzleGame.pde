@@ -11,38 +11,44 @@ import org.jbox2d.dynamics.joints.*;
 import org.jbox2d.p5.*;
 import org.jbox2d.dynamics.*;
 
+// Utility class to share general information about the game to all classes.
 public class Util {
-
+  // The grid size of the game (in pixels).
   public static final int GRID_SIZE = 20;
 
   // Should be set before any util methods are called that need this.
   public static Physics physics;
-  
-//  public static 
-
 }
  
-boolean debug = true;
-
-Level currentLevel;
-
-// The physics engine.
-Physics physics; 
-
-// a handler that will detect collisions
-CollisionDetector detector; 
-
+// Main Game Controller.
+GameController gameController;
+// Audio center to play sounds.
 AudioCenter audioCenter;
+// The physics engine.
+Physics physics;
+// A handler that will detect collisions
+CollisionDetector detector; 
+// Whether or not to draw the debug shapes.
+boolean debug;
 
-// this is used to remember that the user 
-// has triggered the audio on iOS... see mousePressed below
-boolean userHasTriggeredAudio = false;
+
+// The current level that is played.
+Level currentLevel;
+//TODO: userHasTriggeredAudio -> for iOS
 
 void setup() {
   console.log("setup");
+  gameController = new GameController();
+  
+  // Initialize general settings.
+  debug = true;
+  
   size(1000, 700);
-  frameRate(60);
+  frameRate(gameController.getFrameRate());
+
   audioCenter = new AudioCenter(new Maxim(this));
+  //TODO: Add sounds to AudioCenter
+  //audioCenter.addSound(SoundType.PING, "sfx/ping.wav");
 
   /*
    * Set up a physics world. This takes the following parameters:
@@ -59,56 +65,72 @@ void setup() {
    * pixelsPerMeter Pixels per physical meter
    */
   physics = new Physics(this, 700, 700, 0, -10, width*2, height*2, 700, 700, 100);
+  // Set the physics object on the Util, so it can be used by other classes.
   Util.physics = physics;
   // This overrides the debug render of the physics engine with the method gameRenderer
   if (!debug) {
     physics.setCustomRenderingMethod(this, "gameRenderer");
+    //TODO: Enable/disable debug, for disabling use: unsetCustomRenderingMethod
   }
+  // Density of the objects.
+  //TODO: vary per item.
   physics.setDensity(10.0);
   
-  currentLevel = new Level(1, "Demo", "This is a description", loadImage("background/distribution_center.jpg"));
-  currentLevel.addFixedItem(new Item(ItemType.WOODEN_BEAM, 4, 16));
-  currentLevel.addFixedItem(new Item(ItemType.WOODEN_BEAM, 15, 16));
-  currentLevel.addFixedItem(new Item(ItemType.SOCCER_BALL, 14, 6));
-
+  // Create the current level.
+  //TODO: list of levels to go through with one a current level.
   Inventory inventory = new Inventory();
-  inventory.add(new Item(ItemType.WOODEN_BEAM));
-  inventory.add(new Item(ItemType.WOODEN_BEAM));
-  inventory.add(new Item(ItemType.SOCCER_BALL));
-  
+  inventory.add(ItemType.WOODEN_BEAM, 3);
+  inventory.add(ItemType.GOAL);
+  inventory.add(ItemType.DIAGONAL_BEAM, 10);
+  inventory.add(ItemType.SOCCER_BALL, 2);
 
-//  woodenBeamImage = loadImage("items/wooden_beam.png");
-//  ballImage = loadImage("items/soccer_ball.png");
+  Level level1 = new Level(1, "Demo", "This is a description", loadImage("background/distribution_center.jpg"), inventory);
+  level1.addFixedItem(new Item(ItemType.DIAGONAL_BEAM, 10, 20));
+  level1.addFixedItem(new Item(ItemType.SOCCER_BALL, 12, 16));
+  level1.addFixedItem(new Item(ItemType.GOAL, 32, 18));
 
+  gameController.addLevel(level1);
 
-  // circle parameters are center x,y and radius
-  //droid = physics.createCircle(400, 100, ballSize/2);
+  currentLevel = gameController.getLevel(1);
 
-  // sets up the collision callbacks
-  detector = new CollisionDetector (physics, this);
+  // Set up the collision callbacks
+  detector = new CollisionDetector(physics, this);
+}
 
-/*  droidSound = maxim.loadFile("droid.wav");
-  wallSound = maxim.loadFile("wall.wav");
-
-  droidSound.setLooping(false);
-  droidSound.volume(0.25);
-  wallSound.setLooping(false);
-  wallSound.volume(0.25);
-  // now an array of crate sounds
-  crateSounds = new AudioPlayer[crates.length];
-  for (int i=0;i<crateSounds.length;i++) {
-    crateSounds[i] = maxim.loadFile("crate2.wav");
-    crateSounds[i].setLooping(false);
-    crateSounds[i].volume(0.25);
-  }*/
+// Get the physics engine step size in seconds (or a fraction of that).
+float getStepSize() {
+  return gameController.getStepSize();
 }
 
 void draw() {
   // Draw the background image over the whole screen.
   image(currentLevel.getBackgroundImage(), 0, 0, width, height);
 
+  if (currentLevel != null) {
+    drawInventory();  
+  } else {
+    drawMenu();
+  }
+
   // Render the game world based on the data in the physics engine.
   gameRenderer(physics.getWorld());
+}
+
+void drawInventory() {
+  int playingFieldWidth = 700;
+  int marginLeft = 30;
+  int marginTop = 50;
+  int itemMargin = 25;
+  PFont font = createFont("Arial", 16, true);
+  textFont(font, 24);
+  text("Inventory", playingFieldWidth + marginLeft, marginTop);
+  int inventoryX = playingFieldWidth + marginLeft;
+  int inventoryY = marginTop + itemMargin;
+  for (ItemType itemType : currentLevel.getInventory().getAllTypes()) {
+    text("" + currentLevel.getInventory().getAmountInInventory(itemType), inventoryX, inventoryY + itemType.getImage().height / 2);
+    image(itemType.getImage(), inventoryX + 30, inventoryY);
+    inventoryY += itemType.getImage().height + itemMargin;
+  }
 }
 
 /** on iOS, the first audio playback has to be triggered
@@ -118,10 +140,12 @@ void draw() {
 * we could be nice and mute it first but you can do that... 
 */
 void mousePressed() {
+  gameController.togglePlay();
+  /*
   if (!userHasTriggeredAudio) {
     //player.play();
     userHasTriggeredAudio = true;
-  }
+  }*/
 }
 
 void mouseDragged()
@@ -133,11 +157,13 @@ void mouseDragged()
 // on the distance from the droid to the catapult
 void mouseReleased()
 {
+/*
   Vec2 impulse = new Vec2();
   impulse.set(startPoint);
   impulse = impulse.sub(droid.getWorldCenter());
   impulse = impulse.mul(50);
   droid.applyImpulse(impulse, droid.getWorldCenter());
+  */
 }
 
 // this function renders the physics scene.
@@ -150,42 +176,20 @@ void gameRenderer(World world) {
   for (Item staticItem : currentLevel.getFixedItems()) {
     Body staticBody = staticItem.getBody();
     Vec2 position = physics.worldToScreen(staticBody.getWorldCenter());
-    float angle = physics.getAngle(staticBody);
+    float angle = physics.getAngle(staticBody) - degrees(staticBody.getAngle());
     pushMatrix();
     translate(position.x, position.y);
     rotate(-radians(angle));
     image(staticItem.getImage(), -staticItem.getScreenWidth() / 2, -staticItem.getScreenHeight() / 2, staticItem.getScreenWidth(), staticItem.getScreenHeight());
     popMatrix();
   }
-/*
-  // get the droids position and rotation from
-  // the physics engine and then apply a translate 
-  // and rotate to the image using those values
-  // (then do the same for the crates)
-  Vec2 screenDroidPos = physics.worldToScreen(droid.getWorldCenter());
-  float droidAngle = physics.getAngle(droid);
-  pushMatrix();
-  translate(screenDroidPos.x, screenDroidPos.y);
-  rotate(-radians(droidAngle));
-  image(ballImage, -ballSize / 2, -ballSize / 2, ballSize, ballSize);
-  popMatrix();
-
-
-  Vec2 worldCenter = woodenBeam.getWorldCenter();
-  Vec2 cratePos = physics.worldToScreen(worldCenter);
-  float crateAngle = physics.getAngle(woodenBeam);
-  pushMatrix();
-  translate(cratePos.x, cratePos.y);
-  rotate(-crateAngle);
-  image(woodenBeamImage, -100, -10, 200, 20);
-  popMatrix();*/
-
 }
 
 // This method gets called automatically when 
 // there is a collision
 void collision(Body b1, Body b2, float impulse)
-{/*
+{
+  /*
   if ((b1 == droid && b2.getMass() > 0)
     || (b2 == droid && b1.getMass() > 0))
   {

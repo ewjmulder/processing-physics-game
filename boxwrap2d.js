@@ -438,7 +438,7 @@ Physics = function (sketch, screenW,  screenH,
 		 * @return
 		 */
 		createCircle : function(x, y, r) {
-			var center = this.screenToWorld(x,y);
+			var position = this.screenToWorld(x + r, y + r);
 			var rad    = this.screenToWorld(r);
 			
 			 var fixDef = new FixtureDef();
@@ -454,8 +454,8 @@ Physics = function (sketch, screenW,  screenH,
 			    bodyDef.type = Body.b2_dynamicBody;
 			 }
 			 //console.log("radius " + rad);
-			 bodyDef.position.x = center.x;
-			 bodyDef.position.y = center.y;
+			 bodyDef.position.x = position.x;
+			 bodyDef.position.y = position.y;
 			 fixDef.shape = new CircleShape(rad);
 			 var b  = this.m_world.CreateBody(bodyDef);
 			 b.CreateFixture(fixDef);
@@ -506,28 +506,63 @@ Physics = function (sketch, screenW,  screenH,
 		 * are all fine.
 		 * @param vertices Any number of pairs of x,y floats, or an array of the same (screen coordinates)
 		 * @return
+
+                 * Note: Would be nicer to have an x and y position in this function and set the position of the polygon with that,
+                 * but somehow that causes weird behavior upon collisions: sudden movement of the shape fown the grid.
+
 		 */
-		createPolygon : function() {
-			var vertices;
-			if (arguments.length == 1 && arguments[0].length){
-				vertices = arguments[0];
-			} else {
-				vertices = arguments;
-			}
-			if (vertices.length % 2 != 0) 
-				throw new IllegalArgumentException("Vertices must be given as pairs of x,y coordinates, " +
-												   "but number of passed parameters was odd.");
-			var nVertices = vertices.length / 2;
-			var pd = new b2PolyDef();
-			pd.vertexCount = nVertices;
+		createPolygon : function(vertices) {
+                      if (vertices.length % 2 != 0) 
+                        throw new IllegalArgumentException("Vertices must be given as pairs of x,y coordinates, " +
+                                           "but number of passed parameters was odd.");
+                      var nVertices = vertices.length / 2;
+
+  
+                       var fixDef = new FixtureDef();
+                       this.setShapeDefProperties(fixDef);
+                       
+                       var bodyDef = new BodyDef();
+                       //console.log("density " + this.m_density)
+                       if(this.m_density < 0.00001) {
+                         //console.log("static body");
+                          bodyDef.type = Body.b2_staticBody;
+                       } else {
+                         //console.log("dynamic body");
+                          bodyDef.type = Body.b2_dynamicBody;
+                       }
+                       var position = this.screenToWorld(0, 0);
+                       
+                      var average = new Vec2(0, 0);
+                      var worldVertices = [];
+                      for (var i = 0; i < nVertices; i++) {
+                        var v = this.screenToWorld(vertices[2*i],vertices[2*i+1]);
+                        //console.log("creating vertex " + v.x + " " + v.y);
+                        worldVertices.push(new Vec2(v.x, v.y));
+                        average.x += v.x;
+                        average.y += v.y;
+                      }
+                      
+                      if(nVertices > 0){
+                        average.x /= nVertices;
+                        average.y /= nVertices;
+                      }/*
+                      for (var i = 0; i < nVertices; i++) {
+                        pd.vertices[i].x -= average.x;
+                        pd.vertices[i].y -= average.y;
+                      }*/
+
+
+                       bodyDef.position.x = position.x;
+                       bodyDef.position.y = position.y;
+                       fixDef.shape = new PolygonShape;
+                       fixDef.shape.SetAsArray(worldVertices, nVertices);
+                       var b  = this.m_world.CreateBody(bodyDef);
+                       b.CreateFixture(fixDef);
+
+  
+  /*
+			//pd.vertexCount = nVertices;
 			var average = new Vec2(0, 0);
-			for (var i = 0; i < nVertices; i++) {
-				var v = this.screenToWorld(vertices[2*i],vertices[2*i+1]);
-				//console.log("creating vertex " + v.x + " " + v.y);
-				pd.vertices[i].Set(v.x, v.y);
-				average.x += v.x;
-				average.y += v.y;
-			}
 			if(nVertices > 0){
 				average.x /= nVertices;
 				average.y /= nVertices;
@@ -546,7 +581,7 @@ Physics = function (sketch, screenW,  screenH,
 			
 			var b = this.m_world.CreateBody(bd);
 			//this.enhanceBody(b);
-			
+			*/
 			
 			return b;
 		},
@@ -727,7 +762,14 @@ Physics = function (sketch, screenW,  screenH,
 		},
 		
 		step : function(){
+                        // Note: custom modification to allow for pausing and setting a different speed.
+                        /* PREVIOUS CODE
 			var timeStep = 1.0/60;
+                        */
+                        /* START Modification */
+                        var timeStep = physics.m_sketch.getStepSize();
+                        /* END Modification */
+
 			var iteration = 1;
 			this.m_world.Step(timeStep, iteration);
 			//console.log("stepping");

@@ -8,11 +8,14 @@ public class Inventory {
     this.itemsUsed = new ArrayList<Item>();
   }
 
-  public void add(Item item) {
-    if (this.itemsInInventory.contains(item)) {
-      console.error("Duplicate item in inventory");
+  public void add(ItemType itemType) {
+    this.add(itemType, 1);
+  }
+
+  public void add(ItemType itemType, int amount) {
+    for (int i = 0; i < amount; i++) {
+      this.itemsInInventory.add(new Item(itemType));
     }
-    this.itemsInInventory.add(item);
   }
 
   public Item use(ItemType type) {
@@ -35,6 +38,7 @@ public class Inventory {
     if (!this.itemsUsed.contains(item)) {
       console.error("Stop using an item that is not in the itemsUsed");
     }
+    item.resetPosition();
     this.itemsUsed.remove(item);
     this.itemsInInventory.add(item);
   }
@@ -53,6 +57,7 @@ public class Inventory {
         allTypes.add(item.getType());
       }
     }
+    return allTypes;
   }
   
   public int getAmountInInventory(ItemType type) {

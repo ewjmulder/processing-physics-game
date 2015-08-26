@@ -1,22 +1,37 @@
 public class Item {
  
+  public static final int NOT_IN_USE_X = -10;
+  public static final int NOT_IN_USE_Y = -10;
+  
   private ItemType type;
   private Body body;
   private int gridX;
   private int gridY;
 
   public Item(ItemType type) {
-    this(type, 0, 0);
+    // Create these bodies outside the 'playing field', so they do not interact while not in use.
+    this(type, NOT_IN_USE_X, NOT_IN_USE_Y);
   }
 
   public Item(ItemType type, int gridX, int gridY) {
     console.log("constructor Item(" + type + ", " + gridX + ", " + gridY + ")");
     this.type = type;
-    if (this.type.getShape() == Shape.RECTANGLE) {
-      this.body = Util.physics.createRect(Util.GRID_SIZE * gridX, Util.GRID_SIZE * gridY, Util.GRID_SIZE * gridX + this.type.getScreenWidth(), Util.GRID_SIZE * gridY + this.type.getScreenHeight());
+    int screenX = Util.GRID_SIZE * gridX;
+    int screenY = Util.GRID_SIZE * gridY;
+    if (this.type.getShape() == Shape.POLYGON) {
+      // Recalculate to absolute screen coordinates. This is needed, because using the screenX and screenY as position of the polygon body causes bugs in box2d.
+      int[] screenCoordinates = new int[this.type.getVertices().length];
+      for (int index; index < screenCoordinates.length; index += 2) {
+        screenCoordinates[index] = screenX + this.type.getVertices()[index];
+        screenCoordinates[index + 1] = screenY + this.type.getVertices()[index + 1];
+      }
+      this.body = Util.physics.createPolygon(screenCoordinates);      
+    } else if (this.type.getShape() == Shape.RECTANGLE) {
+      this.body = Util.physics.createRect(screenX, screenY, screenX + this.type.getScreenWidth(), screenY + this.type.getScreenHeight());
     } else if (this.type.getShape() == Shape.CIRCLE) {
-      this.body = Util.physics.createCircle(Util.GRID_SIZE * gridX, Util.GRID_SIZE * gridY, this.type.getScreenWidth() / 2);
+      this.body = Util.physics.createCircle(screenX, screenY, this.type.getScreenWidth() / 2);
     }
+    this.body.GetFixtureList().SetRestitution(this.type.getRestitution());
     if (this.type.isStatic()) {
       this.body.setType(Body.b2_staticBody);
     }
@@ -62,6 +77,11 @@ public class Item {
 
   public int getGridY() {
     return this.gridY;
+  }
+  
+  public void resetPosition() {
+    Vec2 position = new Vec2(Util.GRID_SIZE * gridX, Util.GRID_SIZE * gridY);
+    this.body.setPosition(position);
   }
   
 }

@@ -1,12 +1,16 @@
 public class SoundType {
+
+  public static final SoundType PING = new SoundType("Ping");
+  public static final SoundType PONG = new SoundType("Pong");
  
-  private int id;
+  private String name;
   
-  private SoundType(int id) {
-    this.id = id;
+  private SoundType(String name) {
+    this.name = name;
   }
   
-  public static final SoundType PING = new SoundType(1);
-  public static final SoundType PONG = new SoundType(2);
+  public String toString() {
+    return this.name;
+  }
   
 }

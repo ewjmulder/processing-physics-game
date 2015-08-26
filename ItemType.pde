@@ -1,6 +1,7 @@
 // Put this class above the ItemType, otherwise it's not known yet when it's needed.
 public class Shape {
   
+  public static final Shape POLYGON = new Shape("Polygon");
   public static final Shape CIRCLE = new Shape("Circle");
   public static final Shape RECTANGLE = new Shape("Rectangle");
 
@@ -19,11 +20,16 @@ public class Shape {
 public class ItemType {
  
   // TODO: Find a way to use the image.width/height fields in such a way that they are always initialized, so we don't have to provide them here explicitly.
-  public static final ItemType SOCCER_BALL = new ItemType("Soccer ball", Shape.CIRCLE, false, loadImage("items/soccer_ball.png"), 60, 60);
-  public static final ItemType WOODEN_BEAM = new ItemType("Wooden beam", Shape.RECTANGLE, true, loadImage("items/wooden_beam.png"), 200, 20);
+  //Alternatively: get them from the filename
+  public static final ItemType GOAL = new ItemType("Goal", Shape.CIRCLE, null, 0, true, loadImage("items/target.png"), 60, 60);
+  public static final ItemType SOCCER_BALL = new ItemType("Soccer ball", Shape.CIRCLE, null, 0.5, false, loadImage("items/soccer_ball.png"), 60, 60);
+  public static final ItemType WOODEN_BEAM = new ItemType("Wooden beam", Shape.RECTANGLE, null, 0.8, true, loadImage("items/wooden_beam.png"), 200, 20);
+  public static final ItemType DIAGONAL_BEAM = new ItemType("Diagonal beam", Shape.POLYGON, new int[] {0, 14, 14, 0, 100, 86, 86, 100}, 0.8, true, loadImage("items/diagonal_beam.png"), 100, 100);
   
   private String name;
   private Shape shape;
+  private int[] vertices;
+  private float restitution;
   private boolean staticItem;
   private PImage image;
   private int screenWidth;
@@ -31,9 +37,11 @@ public class ItemType {
   private int gridWidth;
   private int gridHeight;
 
-  public ItemType(String name, Shape shape, boolean staticItem, PImage image, int screenWidth, int screenHeight) {
+  public ItemType(String name, Shape shape, int[] vertices, float restitution, boolean staticItem, PImage image, int screenWidth, int screenHeight) {
     this.name = name;
     this.shape = shape;
+    this.vertices = vertices;
+    this.restitution = restitution;
     this.staticItem = staticItem;
     this.image = image;
     this.screenWidth = screenWidth;
@@ -41,6 +49,12 @@ public class ItemType {
     this.gridWidth = (int)(this.screenWidth / Util.GRID_SIZE);
     this.gridHeight = (int)(this.screenHeight / Util.GRID_SIZE);
 
+    if (this.shape == Shape.POLYGON && this.vertices == null) {
+      console.error("A polygon shape must always have vertices");
+    }
+    if (this.shape != Shape.POLYGON && this.vertices != null) {
+      console.error("A non polygon shape cannot have vertices");
+    }
     if (this.shape == Shape.CIRCLE && this.width != this.height) {
       console.error("Circles must have equal width and height");
     }
@@ -60,10 +74,19 @@ public class ItemType {
     return this.shape;
   }
 
+  // Only applicable for Shape.POLYGON
+  public int[] getVertices() {
+    return this.vertices;
+  }
+  
+  public float getRestitution() {
+    return this.restitution;
+  }
+
   public boolean isStatic() {
     return this.staticItem;
   }
-
+  
   public PImage getImage() {
     return this.image;
   }

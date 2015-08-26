@@ -7,13 +7,14 @@ public class Level {
   private List<Item> fixedItems;
   private Inventory inventory;
 
-  public Level(int number, String name, String description, PImage backgroundImage) {
+  public Level(int number, String name, String description, PImage backgroundImage, Inventory inventory) {
     this.number = number;
     this.name = name;
     this.description = description;
     this.backgroundImage = backgroundImage;
     this.fixedItems = new ArrayList<Item>();
-    this.inventory = new Inventory();
+    console.log("inventory: " + inventory);
+    this.inventory = inventory;
   }
   
   public int getNumber() {

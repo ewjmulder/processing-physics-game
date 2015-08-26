@@ -6541,6 +6541,9 @@ Box2D.postDefs = [];
             i < vertexCount; ++i) {
                vertices[i] = b2Math.MulX(xf, localVertices[i]);
             }
+            if (vertexCount == 6) {
+            //console.log("vertices[0].x: " + vertices[0].x);
+            }
             this.m_debugDraw.DrawSolidPolygon(vertices, vertexCount, color);
          }
          break;
@@ -10879,3 +10882,5 @@ Box2D.postDefs = [];
 var i;
 for (i = 0; i < Box2D.postDefs.length; ++i) Box2D.postDefs[i]();
 delete Box2D.postDefs;
+
+
