@@ -476,115 +476,63 @@ Physics = function (sketch, screenW,  screenH,
 			return b;
 		},
 		
-		/**
-		 * Create a polygon based on vertices.
-		 * <BR><BR>
-		 * Polygons must be:
-		 * <ul>
-		 * <li>Ordered clockwise in screen coordinates (which
-		 * becomes counterclockwise in world coordinates).
-		 * <li>Non self-intersecting.
-		 * <li>Convex
-		 * </ul>
-		 * Failure to adhere to any of these restrictions may cause
-		 * simulation crashes or problems.  In particular, if your
-		 * objects are showing up as static objects instead of dynamic
-		 * ones, and are not colliding correctly, you have probably 
-		 * not met the clockwise ordering requirement.
-		 * <BR><BR>
-		 * This can be called with any number of vertices passed as
-		 * pairs of interleaved floats, for instance:
-		 * <pre>
-		 * createPolygon(x0,y0,x1,y1,x2,y2,x3,y3);</pre>
-		 * or
-		 * <pre>
-		 * createPolygon(x0,y0,x1,y1,x2,y2,x3,y3,x4,y4,x5,y5);</pre>
-		 * or
-		 * <pre>
-		 * float[] xyInterleaved = {x0,y0,x1,y1,x2,y2,x3,y3,x4,y4};
-		 * createPolygon(xyInterleaved);</pre>
-		 * are all fine.
-		 * @param vertices Any number of pairs of x,y floats, or an array of the same (screen coordinates)
-		 * @return
 
-                 * Note: Would be nicer to have an x and y position in this function and set the position of the polygon with that,
-                 * but somehow that causes weird behavior upon collisions: sudden movement of the shape fown the grid.
+/**
+ * Create a polygon based on vertices.
+ * Polygons must be:
+ * - Ordered clockwise in screen coordinates (which
+ * becomes counterclockwise in world coordinates).
+ * - Non self-intersecting.
+ * - Convex
 
-		 */
-		createPolygon : function(vertices) {
-                      if (vertices.length % 2 != 0) 
-                        throw new IllegalArgumentException("Vertices must be given as pairs of x,y coordinates, " +
-                                           "but number of passed parameters was odd.");
-                      var nVertices = vertices.length / 2;
+ * Failure to adhere to any of these restrictions may cause
+ * simulation crashes or problems.  In particular, if your
+ * objects are showing up as static objects instead of dynamic
+ * ones, and are not colliding correctly, you have probably 
+ * not met the clockwise ordering requirement.
 
-  
-                       var fixDef = new FixtureDef();
-                       this.setShapeDefProperties(fixDef);
-                       
-                       var bodyDef = new BodyDef();
-                       //console.log("density " + this.m_density)
-                       if(this.m_density < 0.00001) {
-                         //console.log("static body");
-                          bodyDef.type = Body.b2_staticBody;
-                       } else {
-                         //console.log("dynamic body");
-                          bodyDef.type = Body.b2_dynamicBody;
-                       }
-                       var position = this.screenToWorld(0, 0);
-                       
-                      var average = new Vec2(0, 0);
-                      var worldVertices = [];
-                      for (var i = 0; i < nVertices; i++) {
-                        var v = this.screenToWorld(vertices[2*i],vertices[2*i+1]);
-                        //console.log("creating vertex " + v.x + " " + v.y);
-                        worldVertices.push(new Vec2(v.x, v.y));
-                        average.x += v.x;
-                        average.y += v.y;
-                      }
-                      
-                      if(nVertices > 0){
-                        average.x /= nVertices;
-                        average.y /= nVertices;
-                      }/*
-                      for (var i = 0; i < nVertices; i++) {
-                        pd.vertices[i].x -= average.x;
-                        pd.vertices[i].y -= average.y;
-                      }*/
+ * This can be called with any number of vertices passed as
+ * pairs of interleaved floats, for instance:
+ * float[] xyInterleaved = {x0,y0,x1,y1,x2,y2,x3,y3,x4,y4};
+ * createPolygon(xyInterleaved);
+ * @param vertices An array of vertex coordinates (screen coordinates)
+ * @return the created body
 
+ * Note: Would be nicer to have an x and y position in this function and set the position of the polygon with that,
+ * but somehow that causes weird behavior upon collisions: sudden movement of the shape down the grid.
+ * Even creating them this way has some buggy behavior now and then. Probably a bug in the CollidePolygonAndCircle function in Box2D.js
+ */
+createPolygon : function(vertices) {
+  if (vertices.length % 2 != 0) 
+      throw new IllegalArgumentException("Vertices must be given as pairs of x,y coordinates, " +
+                           "but number of passed parameters was odd.");
+  var nVertices = vertices.length / 2;
 
-                       bodyDef.position.x = position.x;
-                       bodyDef.position.y = position.y;
-                       fixDef.shape = new PolygonShape;
-                       fixDef.shape.SetAsArray(worldVertices, nVertices);
-                       var b  = this.m_world.CreateBody(bodyDef);
-                       b.CreateFixture(fixDef);
-
-  
-  /*
-			//pd.vertexCount = nVertices;
-			var average = new Vec2(0, 0);
-			if(nVertices > 0){
-				average.x /= nVertices;
-				average.y /= nVertices;
-			}
-			for (var i = 0; i < nVertices; i++) {
-				pd.vertices[i].x -= average.x;
-				pd.vertices[i].y -= average.y;
-			}
-			this.setShapeDefProperties(pd);
-			
-			
-			var bd = new BodyDef();
-			this.setBodyDefProperties(bd);
-			bd.position.Set(average.x, average.y);
-			bd.AddShape(pd);
-			
-			var b = this.m_world.CreateBody(bd);
-			//this.enhanceBody(b);
-			*/
-			
-			return b;
-		},
+  var fixDef = new FixtureDef();
+  this.setShapeDefProperties(fixDef);
+       
+  var bodyDef = new BodyDef();
+  if (this.m_density < 0.00001) {
+    bodyDef.type = Body.b2_staticBody;
+  } else {
+    bodyDef.type = Body.b2_dynamicBody;
+  }
+  var position = this.screenToWorld(0, 0);
+       
+  var worldVertices = [];
+  for (var i = 0; i < nVertices; i++) {
+    var v = this.screenToWorld(vertices[2*i],vertices[2*i+1]);
+    worldVertices.push(new Vec2(v.x, v.y));
+  }
+      
+  bodyDef.position.x = position.x;
+  bodyDef.position.y = position.y;
+  fixDef.shape = new PolygonShape;
+  fixDef.shape.SetAsArray(worldVertices, nVertices);
+  var b  = this.m_world.CreateBody(bodyDef);
+  b.CreateFixture(fixDef);
+  return b;
+},
 		
 		
 		setBodyDefProperties : function(bd) {
