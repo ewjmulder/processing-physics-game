@@ -30,6 +30,12 @@ Physics physics;
 CollisionDetector detector; 
 // Whether or not to draw the debug shapes.
 boolean debug;
+// Whether or not to draw the menu.
+boolean menuDisplayed = true;
+// Whether the curtain opening is still in progress.
+boolean curtainOpening = false;
+int curtainProgress = 0;
+PImage curtainLeft, curtainRight;
 
 // Control buttons
 PImage play, play_bw, pause, pause_bw, stop, stop_bw, fastForward, fastForward_bw, rewind, rewind_bw;
@@ -93,7 +99,7 @@ void setup() {
 
   Level level1 = new Level(1, "Demo", "This is a description", loadImage("background/distribution_center.jpg"), inventory);
   level1.addFixedItem(new Item(ItemType.DIAGONAL_BEAM, 1, 4));  
-  Item ball = new Item(ItemType.SOCCER_BALL, 2, 1);
+  Item ball = new Item(ItemType.SOCCER_BALL, 6, 1);
   Item goal = new Item(ItemType.GOAL, 28, 5);
   level1.addFixedItem(ball);
   level1.addFixedItem(goal);
@@ -105,6 +111,9 @@ void setup() {
 
   // Set up the collision callbacks
   detector = new CollisionDetector(physics, this);
+  
+  curtainLeft = loadImage("menu/curtain_left.png");
+  curtainRight = loadImage("menu/curtain_right.png");
   
   int buttonSpacing = 50;
   int buttonY = 40;
@@ -150,7 +159,8 @@ void draw() {
     // Draw the background image over the whole screen.
     image(gameController.getCurrentLevel().getBackgroundImage(), 0, 0, width, height);
     drawInventory();  
-  } else {
+  }
+  if (menuDisplayed) {
     drawMenu();
   }
   
@@ -237,7 +247,8 @@ void drawInventory() {
 }
 
 void drawMenu() {
-  //TODO: menu
+  image(curtainLeft, 0, 0, 500, 700);
+  image(curtainRight, 500, 0, 500, 700);
 }
 
 /** on iOS, the first audio playback has to be triggered
@@ -320,15 +331,17 @@ void mouseReleased() {
 void gameRenderer(World world) {
   stroke(0);
   
-  for (Item staticItem : gameController.getCurrentLevel().getItemsInSmulation()) {
-    Body staticBody = staticItem.getBody();
-    Vec2 position = physics.worldToScreen(staticBody.getWorldCenter());
-    float angle = physics.getAngle(staticBody) - degrees(staticBody.getAngle());
-    pushMatrix();
-    translate(position.x, position.y);
-    rotate(-radians(angle));
-    image(staticItem.getImage(), -staticItem.getScreenWidth() / 2, -staticItem.getScreenHeight() / 2, staticItem.getScreenWidth(), staticItem.getScreenHeight());
-    popMatrix();
+  if (!menuDisplayed) {
+    for (Item staticItem : gameController.getCurrentLevel().getItemsInSmulation()) {
+      Body staticBody = staticItem.getBody();
+      Vec2 position = physics.worldToScreen(staticBody.getWorldCenter());
+      float angle = physics.getAngle(staticBody) - degrees(staticBody.getAngle());
+      pushMatrix();
+      translate(position.x, position.y);
+      rotate(-radians(angle));
+      image(staticItem.getImage(), -staticItem.getScreenWidth() / 2, -staticItem.getScreenHeight() / 2, staticItem.getScreenWidth(), staticItem.getScreenHeight());
+      popMatrix();
+    }
   }
 }
 
