@@ -22,9 +22,10 @@ public class ItemType {
   // TODO: Find a way to use the image.width/height fields in such a way that they are always initialized, so we don't have to provide them here explicitly.
   //Alternatively: get them from the filename
   public static final ItemType GOAL = new ItemType("Goal", Shape.CIRCLE, null, 0, true, loadImage("items/target.png"), 60, 60);
-  public static final ItemType SOCCER_BALL = new ItemType("Soccer ball", Shape.CIRCLE, null, 0.5, false, loadImage("items/soccer_ball.png"), 60, 60);
-  public static final ItemType WOODEN_BEAM = new ItemType("Wooden beam", Shape.RECTANGLE, null, 0.8, true, loadImage("items/wooden_beam.png"), 200, 20);
-  public static final ItemType DIAGONAL_BEAM = new ItemType("Diagonal beam", Shape.POLYGON, new int[] {0, 14, 14, 0, 100, 86, 86, 100}, 0.8, true, loadImage("items/diagonal_beam.png"), 100, 100);
+  public static final ItemType SOCCER_BALL = new ItemType("Soccer ball", Shape.CIRCLE, null, 0.7, false, loadImage("items/soccer_ball.png"), 60, 60);
+  public static final ItemType BOWLING_BALL = new ItemType("Bowling ball", Shape.CIRCLE, null, 0.1, false, loadImage("items/bowling_ball.png"), 60, 60);
+  public static final ItemType WOODEN_BEAM = new ItemType("Wooden beam", Shape.RECTANGLE, null, 0.5, true, loadImage("items/wooden_beam.png"), 200, 20);
+  public static final ItemType DIAGONAL_BEAM = new ItemType("Diagonal beam", Shape.POLYGON, new int[] {0, 14, 14, 0, 100, 86, 86, 100}, 0.5, true, loadImage("items/diagonal_beam.png"), 100, 100);
   
   private String name;
   private Shape shape;

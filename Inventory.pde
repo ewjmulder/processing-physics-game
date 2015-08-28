@@ -47,6 +47,14 @@ public class Inventory {
     this.itemsUsed.remove(item);
     this.itemsInInventory.add(item);
   }
+
+  public void resetUsedItems() {
+    for (Item item : new ArrayList<Item>(this.itemsUsed)) {
+      item.resetGridPosition();
+      this.itemsUsed.remove(item);
+      this.itemsInInventory.add(item);
+    }
+  }
   
   public List<Item> getItemsInUse() {
     return this.itemsUsed;

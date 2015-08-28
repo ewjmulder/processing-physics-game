@@ -102,6 +102,10 @@ public class Item {
     return this.startGridY;
   }
   
+  public boolean isPlaced() {
+    return this.placedGridX != this.startGridX && this.placedGridY != this.startGridY;
+  }
+  
   public void setPlaceOnGrid(int gridX, int gridY) {
     this.placedGridX = gridX;
     this.placedGridY = gridY;

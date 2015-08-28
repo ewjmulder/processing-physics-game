@@ -28,21 +28,24 @@ AudioCenter audioCenter;
 Physics physics;
 // A handler that will detect collisions
 CollisionDetector detector; 
-// Whether or not to draw the debug shapes.
-boolean debug;
-// Whether or not to draw the menu.
-boolean menuDisplayed = true;
 // Whether the curtain opening is still in progress.
-boolean curtainOpening = false;
+boolean curtainOpen = true;
+boolean curtainMoving = false;
 int curtainProgress = 0;
 PImage curtainLeft, curtainRight;
 
 // Control buttons
 PImage play, play_bw, pause, pause_bw, stop, stop_bw, fastForward, fastForward_bw, rewind, rewind_bw;
 int playX, playY, pauseX, pauseY, stopX, stopY, fastForwardX, fastForwardY, rewindX, rewindY;
+// Other buttons
+PImage reset, reset_bw, debug, debug_bw, menu, menu_bw;
+int resetX, resetY, debugX, debugY, menuX, menuY;
+
 
 // Data needed for dragging.
 Item itemDragged = null;
+int dragAnchorDeltaX = 0;
+int dragAnchorDeltaY = 0;
 int itemMargin = 10;
 int itemBoxSize = 75;
 int inventoryItem1TopLeftX;
@@ -54,17 +57,10 @@ int inventoryItem1TopLeftY;
 
 void setup() {
   console.log("setup");
-  gameController = new GameController();
-  
-  // Initialize general settings.
-  debug = true;
-  
+  gameController = new GameController(this);
+
   size(1000, 700);
   frameRate(gameController.getFrameRate());
-
-  audioCenter = new AudioCenter(new Maxim(this));
-  //TODO: Add sounds to AudioCenter
-  //audioCenter.addSound(SoundType.PING, "sfx/ping.wav");
 
   /*
    * Set up a physics world. This takes the following parameters:
@@ -83,14 +79,16 @@ void setup() {
   physics = new Physics(this, 700, 700, 0, -10, width*2, height*2, 700, 700, 100);
   // Set the physics object on the Util, so it can be used by other classes.
   Util.physics = physics;
-  // This overrides the debug render of the physics engine with the method gameRenderer
-  if (!debug) {
-    physics.setCustomRenderingMethod(this, "gameRenderer");
-    //TODO: Enable/disable debug, for disabling use: unsetCustomRenderingMethod
-  }
+
   // Density of the objects.
   //TODO: vary per item.
   physics.setDensity(10.0);
+
+  gameController.init();    
+
+  audioCenter = new AudioCenter(new Maxim(this));
+  //TODO: Add sounds to AudioCenter
+  //audioCenter.addSound(SoundType.PING, "sfx/ping.wav");
   
   // Create the current level.
   //TODO: list of levels to go through with one a current level.
@@ -98,12 +96,16 @@ void setup() {
   inventory.add(ItemType.WOODEN_BEAM, 2);
 
   Level level1 = new Level(1, "Demo", "This is a description", loadImage("background/distribution_center.jpg"), inventory);
-  level1.addFixedItem(new Item(ItemType.DIAGONAL_BEAM, 1, 4));  
-  Item ball = new Item(ItemType.SOCCER_BALL, 6, 1);
+  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 0, 34));
+  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 10, 34));
+  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 20, 34));
+  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 25, 34));
+  level1.addFixedItem(new Item(ItemType.DIAGONAL_BEAM, 1, 4));
+  Item ball = new Item(ItemType.SOCCER_BALL, 2, 1);
   Item goal = new Item(ItemType.GOAL, 28, 5);
   level1.addFixedItem(ball);
   level1.addFixedItem(goal);
-  level1.setGoalCollision(ball, goal);
+  level1.setGoalCollision(goal, goal);
 
   gameController.addLevel(level1);
 
@@ -117,6 +119,7 @@ void setup() {
   
   int buttonSpacing = 50;
   int buttonY = 40;
+  int buttonRow2Y = 40 + 50;
   
   playX = 700 + 40;
   playY = buttonY;
@@ -142,6 +145,21 @@ void setup() {
   rewindY = buttonY;
   rewind = loadImage("buttons/rewind.png");
   rewind_bw = loadImage("buttons/rewind_bw.png");
+
+  resetX = 700 + 40;
+  resetY = buttonRow2Y;
+  reset = loadImage("buttons/reset.png");
+  reset_bw = loadImage("buttons/reset_bw.png");
+
+  debugX = resetX + buttonSpacing;
+  debugY = buttonRow2Y;
+  debug = loadImage("buttons/debug.png");
+  debug_bw = loadImage("buttons/debug_bw.png");
+
+  menuX = debugX + buttonSpacing;
+  menuY = buttonRow2Y;
+  menu = loadImage("buttons/menu.png");
+  menu_bw = loadImage("buttons/menu_bw.png");
 }
 
 // Get the physics engine step size in seconds (or a fraction of that).
@@ -160,12 +178,19 @@ void draw() {
     image(gameController.getCurrentLevel().getBackgroundImage(), 0, 0, width, height);
     drawInventory();  
   }
-  if (menuDisplayed) {
-    drawMenu();
-  }
+  drawMenu();
   
   if (itemDragged != null) {
-    image(itemDragged.getImage(), getGridX(mouseX) * Util.GRID_SIZE, getGridY(mouseY) * Util.GRID_SIZE);
+    int imageX = getGridX(mouseX - dragAnchorDeltaX) * Util.GRID_SIZE;
+    int imageY = getGridY(mouseY - dragAnchorDeltaY) * Util.GRID_SIZE;
+    image(itemDragged.getImage(), imageX, imageY);
+    if (isDragOverOtherItem()) {
+      noFill();
+      stroke(255, 0, 0);
+      strokeWeight(3);
+      line(imageX, imageY, imageX + itemDragged.getImage().width, imageY + itemDragged.getImage().height);
+      line(imageX + itemDragged.getImage().width, imageY, imageX, imageY + itemDragged.getImage().height);
+    }
   }
 
 
@@ -213,6 +238,21 @@ void drawInventory() {
   } else {
     image(fastForward_bw, fastForwardX, fastForwardY);
   }
+  if (gameController.canReset()) {
+    image(reset, resetX, resetY);
+  } else {
+    image(reset_bw, resetX, resetY);
+  }
+  if (gameController.canDebug()) {
+    image(debug, debugX, debugY);
+  } else {
+    image(debug_bw, debugX, debugY);
+  }
+  if (gameController.canMenu()) {
+    image(menu, menuX, menuY);
+  } else {
+    image(menu_bw, menuX, menuY);
+  }
   imageMode(CORNER);
 
   int marginLeft = 25;
@@ -246,9 +286,34 @@ void drawInventory() {
   }
 }
 
+void closeCurtain() {
+  if (curtainOpen && !curtainMoving) {
+    curtainMoving = true;
+  }
+}
+
 void drawMenu() {
-  image(curtainLeft, 0, 0, 500, 700);
-  image(curtainRight, 500, 0, 500, 700);
+  int leftX = curtainOpen ? -500 : 0;
+  int rightX = curtainOpen ? 1000 : 500;
+  if (curtainMoving) {
+    if (curtainOpen) {
+      leftX += curtainProgress;
+      rightX -= curtainProgress;
+    } else {
+      leftX -= curtainProgress;
+      rightX += curtainProgress;
+    }
+    curtainProgress += 6;
+    if (curtainProgress >= 500) {
+      curtainOpen = !curtainOpen;
+      curtainProgress = 0;
+      curtainMoving = false;
+    }
+  }
+  if (!curtainOpen || curtainMoving) {
+    image(curtainLeft, leftX, 0, 500, 700);
+    image(curtainRight, rightX, 0, 500, 700);
+  }
 }
 
 /** on iOS, the first audio playback has to be triggered
@@ -258,36 +323,67 @@ void drawMenu() {
 * we could be nice and mute it first but you can do that... 
 */
 void mousePressed() {
-  int buttonRadius = 23;
-  if (dist(mouseX, mouseY, playX, playY) <= buttonRadius) {
-    gameController.play();
-  }
-  if (dist(mouseX, mouseY, pauseX, pauseY) <= buttonRadius) {
-    gameController.pause();
-  }
-  if (dist(mouseX, mouseY, stopX, stopY) <= buttonRadius) {
-    gameController.stop();
-  }
-  if (dist(mouseX, mouseY, rewindX, rewindY) <= buttonRadius) {
-    gameController.rewind();
-  }
-  if (dist(mouseX, mouseY, fastForwardX, fastForwardY) <= buttonRadius) {
-    gameController.fastForward();
-  }
-  if (mouseX >= 0 && mouseX <= 700) {
-    gameController.togglePlay();
-  }
-
-  if (gameController.isPlaying()) {
-    Inventory inventory = gameController.getCurrentLevel().getInventory();
-    for (int itemIndex = 0; itemIndex < inventory.countTypes(); itemIndex++) {
-      if (mouseX >= inventoryItem1TopLeftX  &&
-          mouseX <= inventoryItem1TopLeftX + itemBoxSize &&
-          mouseY >= inventoryItem1TopLeftY + itemIndex * (itemBoxSize + itemMargin) &&
-          mouseY <= inventoryItem1TopLeftY + itemIndex * (itemBoxSize + itemMargin) + itemBoxSize) {
-        ItemType itemType = inventory.getAllTypes().get(itemIndex);        
-        if (inventory.getAmountInInventory(itemType) > 0) {
-          itemDragged = inventory.use(itemType);
+  if (!curtainOpen && !curtainMoving) {
+    curtainMoving = true;
+  } else {
+    int buttonRadius = 23;
+    if (dist(mouseX, mouseY, playX, playY) <= buttonRadius) {
+      gameController.play();
+    }
+    if (dist(mouseX, mouseY, pauseX, pauseY) <= buttonRadius) {
+      gameController.pause();
+    }
+    if (dist(mouseX, mouseY, stopX, stopY) <= buttonRadius) {
+      gameController.stop();
+    }
+    if (dist(mouseX, mouseY, rewindX, rewindY) <= buttonRadius) {
+      gameController.rewind();
+    }
+    if (dist(mouseX, mouseY, fastForwardX, fastForwardY) <= buttonRadius) {
+      gameController.fastForward();
+    }
+    if (dist(mouseX, mouseY, resetX, resetY) <= buttonRadius) {
+      gameController.reset();
+    }
+    if (dist(mouseX, mouseY, debugX, debugY) <= buttonRadius) {
+      gameController.toggleDebug();
+    }
+    if (dist(mouseX, mouseY, menuX, menuY) <= buttonRadius) {
+      closeCurtain();
+    }
+    if (mouseX >= 0 && mouseX <= 700) {
+      boolean clickOnPlaceableItem = false;
+      if (!gameController.isRunning()) {
+        for (Item item : gameController.getCurrentLevel().getInventory().getItemsInUse()) {
+          Vec2 screenPosition = Util.physics.worldToScreen(item.getBody().getPosition().x, item.getBody().getPosition().y);
+          int topLeftX = screenPosition.x - (item.getImage().width / 2);
+          int topLeftY = screenPosition.y - (item.getImage().height / 2);
+          if (mouseX >= topLeftX && mouseX <= topLeftX + item.getImage().width
+              && mouseY >= topLeftY && mouseY <= topLeftY + item.getImage().height) {
+            clickOnPlaceableItem = true;
+            itemDragged = item;
+            dragAnchorDeltaX = mouseX - topLeftX;
+            dragAnchorDeltaY = mouseY - topLeftY;
+            break;
+          }
+        }
+      }
+      if (!clickOnPlaceableItem) {
+        gameController.togglePlay();
+      }
+    }
+  
+    if (gameController.isPlaying()) {
+      Inventory inventory = gameController.getCurrentLevel().getInventory();
+      for (int itemIndex = 0; itemIndex < inventory.countTypes(); itemIndex++) {
+        if (mouseX >= inventoryItem1TopLeftX  &&
+            mouseX <= inventoryItem1TopLeftX + itemBoxSize &&
+            mouseY >= inventoryItem1TopLeftY + itemIndex * (itemBoxSize + itemMargin) &&
+            mouseY <= inventoryItem1TopLeftY + itemIndex * (itemBoxSize + itemMargin) + itemBoxSize) {
+          ItemType itemType = inventory.getAllTypes().get(itemIndex);        
+          if (inventory.getAmountInInventory(itemType) > 0) {
+            itemDragged = inventory.use(itemType);
+          }
         }
       }
     }
@@ -307,21 +403,56 @@ void mouseDragged() {
 // on the distance from the droid to the catapult
 void mouseReleased() {
   if (itemDragged != null) {
-    int gridX = getGridX(mouseX);
-    int gridY = getGridY(mouseY);
-    console.log("gridX: " + gridX);
-    console.log("itemDragged.getGridWidth(): " + itemDragged.getGridWidth());
-    console.log("gridY: " + gridY);
-    console.log("itemDragged.getGridHeight(): " + itemDragged.getGridHeight());
-    if (gridX + itemDragged.getGridWidth() < 35 && gridY + itemDragged.getGridHeight() < 35) {
+    int gridX = getGridX(mouseX - dragAnchorDeltaX);
+    int gridY = getGridY(mouseY - dragAnchorDeltaY);
+    boolean insidePlayingField = gridX + itemDragged.getGridWidth() <= 35 && gridY + itemDragged.getGridHeight() <= 35;
+    if (!isDragOverOtherItem() && insidePlayingField) {
       itemDragged.setPlaceOnGrid(gridX, gridY);
     } else {
-      // Not in playing field, return to inventory.
-      gameController.getCurrentLevel().getInventory().stopUsing(itemDragged);
+      if (itemDragged.isPlaced()) {
+        // Currently placed.
+        if (!insidePlayingField) {
+          // Dragging to the right means put back in inventory.
+          gameController.getCurrentLevel().getInventory().stopUsing(itemDragged);
+        } else {
+          // Ignore drag.
+        }
+      } else {
+        // Not in playing field, return to inventory.
+        gameController.getCurrentLevel().getInventory().stopUsing(itemDragged);
+      }
     }
     // Either way, the dragging is done.
     itemDragged = null;
+    dragAnchorDeltaX = 0;
+    dragAnchorDeltaY = 0;
   }
+}
+
+boolean isDragOverOtherItem() {
+  boolean dragOverOtherItem = false;
+  if (itemDragged != null) {
+    int draggedGridX = getGridX(mouseX - dragAnchorDeltaX);
+    int draggedGridY = getGridY(mouseY - dragAnchorDeltaY);
+    int draggedGridWidth = itemDragged.getGridWidth();
+    int draggedGridHeight = itemDragged.getGridHeight();
+    for (Item item : gameController.getCurrentLevel().getItemsInSimulation()) {
+      if (item != itemDragged) {
+        int gridX = item.getPlacedGridX();
+        int gridY = item.getPlacedGridY();
+        int gridWidth = item.getGridWidth();
+        int gridHeight = item.getGridHeight();
+        if (draggedGridX + draggedGridWidth > gridX &&
+            draggedGridY + draggedGridHeight > gridY &&
+            draggedGridX < gridX + gridWidth &&
+            draggedGridY < gridY + gridHeight) {
+          dragOverOtherItem = true;
+          break;  
+        }
+      }
+    }
+  }
+  return dragOverOtherItem;
 }
 
 // this function renders the physics scene.
@@ -331,16 +462,18 @@ void mouseReleased() {
 void gameRenderer(World world) {
   stroke(0);
   
-  if (!menuDisplayed) {
-    for (Item staticItem : gameController.getCurrentLevel().getItemsInSmulation()) {
-      Body staticBody = staticItem.getBody();
-      Vec2 position = physics.worldToScreen(staticBody.getWorldCenter());
-      float angle = physics.getAngle(staticBody) - degrees(staticBody.getAngle());
-      pushMatrix();
-      translate(position.x, position.y);
-      rotate(-radians(angle));
-      image(staticItem.getImage(), -staticItem.getScreenWidth() / 2, -staticItem.getScreenHeight() / 2, staticItem.getScreenWidth(), staticItem.getScreenHeight());
-      popMatrix();
+  if (curtainOpen && !curtainMoving) {
+    for (Item item : gameController.getCurrentLevel().getItemsInSimulation()) {
+      if (item != itemDragged) {
+        Body body = item.getBody();
+        Vec2 position = physics.worldToScreen(body.getWorldCenter());
+        float angle = physics.getAngle(body) - degrees(body.getAngle());
+        pushMatrix();
+        translate(position.x, position.y);
+        rotate(-radians(angle));
+        image(item.getImage(), -item.getScreenWidth() / 2, -item.getScreenHeight() / 2, item.getScreenWidth(), item.getScreenHeight());
+        popMatrix();
+      }
     }
   }
 }

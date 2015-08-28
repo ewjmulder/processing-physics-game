@@ -1,5 +1,9 @@
 public class GameController {
 
+  // The applet object
+  private PApplet applet;
+  // Whether or not to draw the debug shapes.
+  private boolean debugMode;
   // All levels defined in the game, mapped by number.
   private Map<Integer, Level> levels;
   // The current level;
@@ -13,13 +17,19 @@ public class GameController {
   // Whether we are in the starting position or not
   private boolean inStartingPosition;
 
-  public GameController() {
+  public GameController(PApplet applet) {
+    this.applet = applet;
+    this.debugMode = false;
     this.levels = new HashMap<Integer, Level>();
     this.currentLevel = 0;
     this.simulationPaused = true;
     this.gameFrameRate = 60;
     this.simulationSpeed = 1;
     this.inStartingPosition = true;
+  }
+  
+  public void init() {
+    Util.physics.setCustomRenderingMethod(this.applet, "gameRenderer");
   }
   
   // Get the physics engine step size in seconds (or a fraction of that).
@@ -117,6 +127,29 @@ public class GameController {
       this.simulationSpeed = this.simulationSpeed * 2;
     }
   }
+
+  public void toggleDebug() {
+    this.debugMode = !this.debugMode;
+    // This overrides the debug render of the physics engine with the method gameRenderer
+    if (!this.debugMode) {
+      Util.physics.setCustomRenderingMethod(this.applet, "gameRenderer");
+    } else {
+      Util.physics.unsetCustomRenderingMethod();
+    }
+  }
+  
+  public void reset() {
+    if (this.canReset()) {
+      for (Item item : this.currentLevel.getAllItems()) {
+        item.resetGridPosition();
+      }
+      this.currentLevel.getInventory().resetUsedItems();
+      this.inStartingPosition = true;
+      this.simulationPaused = true;
+      this.simulationSpeed = 1;
+    }
+  }
+
    
   public boolean isRunning() {
     return !this.inStartingPosition;
@@ -140,6 +173,18 @@ public class GameController {
 
   public boolean canRewind() {
     return this.isRunning() && !this.simulationPaused && this.simulationSpeed > 1;
+  }
+
+  public boolean canReset() {
+    return !this.isRunning() || (this.isRunning() && this.simulationPaused);
+  }
+
+  public boolean canDebug() {
+    return this.debugMode;
+  }
+
+  public boolean canMenu() {
+    return !this.isRunning() || (this.isRunning() && this.simulationPaused);
   }
 
 }

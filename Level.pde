@@ -48,7 +48,7 @@ public class Level {
   }
 
   // Get all items that are relevant for the simulation (so excluding the unused items in the inventory).
-  public List<Item> getItemsInSmulation() {
+  public List<Item> getItemsInSimulation() {
     List<Item> allItems = new ArrayList<Item>();
     allItems.addAll(this.fixedItems);
     allItems.addAll(this.inventory.getItemsInUse());
