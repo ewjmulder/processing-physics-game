@@ -1,6 +1,7 @@
 public class Level {
 
   private int number;
+  private SoundType backgroundMusic;
   private String name;
   private String description;
   private PImage backgroundImage;
@@ -8,8 +9,9 @@ public class Level {
   private Inventory inventory;
   private Item[] goalCollision;
 
-  public Level(int number, String name, String description, PImage backgroundImage, Inventory inventory) {
+  public Level(int number, SoundType backgroundMusic, String name, String description, PImage backgroundImage, Inventory inventory) {
     this.number = number;
+    this.backgroundMusic = backgroundMusic;
     this.name = name;
     this.description = description;
     this.backgroundImage = backgroundImage;
@@ -20,6 +22,10 @@ public class Level {
   
   public int getNumber() {
     return this.number;
+  }
+  
+  public SoundType getBackgroundMusic() {
+    return this.backgroundMusic;
   }
   
   public String getName() {

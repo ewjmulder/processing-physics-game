@@ -29,10 +29,16 @@ Physics physics;
 // A handler that will detect collisions
 CollisionDetector detector; 
 // Whether the curtain opening is still in progress.
-boolean curtainOpen = true;
+//boolean curtainOpen = false; //SANDBOX
+boolean curtainOpen = true; //SANDBOX
 boolean curtainMoving = false;
 int curtainProgress = 0;
-PImage curtainLeft, curtainRight;
+PImage curtainLeft, curtainRight, logo;
+
+int initMillis;
+//boolean audioFirstLevelStarted = false; //SANDBOX
+boolean audioFirstLevelStarted = true; //SANDBOX
+boolean wonTheGame = false;
 
 // Control buttons
 PImage play, play_bw, pause, pause_bw, stop, stop_bw, fastForward, fastForward_bw, rewind, rewind_bw;
@@ -50,6 +56,9 @@ int itemMargin = 10;
 int itemBoxSize = 75;
 int inventoryItem1TopLeftX;
 int inventoryItem1TopLeftY;
+
+int levelCompletedStart = 0;
+boolean levelCompleted = false;
 
 //TODO: userHasTriggeredAudio -> for iOS
 
@@ -86,36 +95,29 @@ void setup() {
 
   gameController.init();    
 
+  initMillis = millis();
+
   audioCenter = new AudioCenter(new Maxim(this));
-  //TODO: Add sounds to AudioCenter
-  //audioCenter.addSound(SoundType.PING, "sfx/ping.wav");
+  audioCenter.addSound(SoundType.MUSIC_LEVEL_1, "sound/level1.wav");
+  audioCenter.addSound(SoundType.MUSIC_LEVEL_2, "sound/level2.wav");
+  audioCenter.addSound(SoundType.MUSIC_LEVEL_3, "sound/level3.wav");
+  audioCenter.addSound(SoundType.HIT_WOOD, "sound/hit_wood.wav");
+  audioCenter.addSound(SoundType.HIT_TRAMPOLINE, "sound/hit_trampoline.wav");
+  audioCenter.addSound(SoundType.CHEERING, "sound/cheering.wav");
+  audioCenter.addSound(SoundType.YOU_WON, "sound/you_won.wav");
+  audioCenter.addSound(SoundType.YOU_WON_CHEERING, "sound/you_won_cheering.wav");
   
-  // Create the current level.
-  //TODO: list of levels to go through with one a current level.
-  Inventory inventory = new Inventory();
-  inventory.add(ItemType.WOODEN_BEAM, 2);
+  LevelDefinitions.addLevelsToGameController(gameController);
 
-  Level level1 = new Level(1, "Demo", "This is a description", loadImage("background/distribution_center.jpg"), inventory);
-  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 0, 34));
-  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 10, 34));
-  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 20, 34));
-  level1.addFixedItem(new Item(ItemType.WOODEN_BEAM, 25, 34));
-  level1.addFixedItem(new Item(ItemType.DIAGONAL_BEAM, 1, 4));
-  Item ball = new Item(ItemType.SOCCER_BALL, 2, 1);
-  Item goal = new Item(ItemType.GOAL, 28, 5);
-  level1.addFixedItem(ball);
-  level1.addFixedItem(goal);
-  level1.setGoalCollision(goal, goal);
-
-  gameController.addLevel(level1);
-
-  gameController.playLevel(1);
+//  gameController.playLevel(1); //SANDBOX
+  gameController.playLevel(4); //SANDBOX
 
   // Set up the collision callbacks
   detector = new CollisionDetector(physics, this);
   
   curtainLeft = loadImage("menu/curtain_left.png");
   curtainRight = loadImage("menu/curtain_right.png");
+  logo = loadImage("menu/logo.png");
   
   int buttonSpacing = 50;
   int buttonY = 40;
@@ -193,9 +195,36 @@ void draw() {
     }
   }
 
-
   // Render the game world based on the data in the physics engine.
   gameRenderer(physics.getWorld());
+  
+  if (levelCompleted) {
+    if (millis() - levelCompletedStart > 3000) {
+      levelCompleted = false;
+      gameController.stop();
+      gameController.reset();
+      audioCenter.stopSound(gameController.getCurrentLevel().getBackgroundMusic());
+      int levelCompletedNumber = gameController.getCurrentLevel().getNumber();
+      if (levelCompletedNumber < 3) {
+        gameController.playLevel(levelCompletedNumber + 1);
+        audioCenter.playSound(gameController.getCurrentLevel().getBackgroundMusic(), true);
+      } else {
+        closeCurtain();
+        wonTheGame = true;
+        audioCenter.playSound(SoundType.YOU_WON);
+        audioCenter.playSound(SoundType.YOU_WON_CHEERING);
+      }
+    }
+  }
+
+  if (!audioFirstLevelStarted && millis() - initMillis > 2000) {
+    if (audioCenter.isPlaying(gameController.getCurrentLevel().getBackgroundMusic())) {
+      audioFirstLevelStarted = true;
+    } else {
+      audioCenter.playSound(gameController.getCurrentLevel().getBackgroundMusic(), true);
+    }
+  }
+
 }
 
 int getGridX(int screenX) {
@@ -256,10 +285,18 @@ void drawInventory() {
   imageMode(CORNER);
 
   int marginLeft = 25;
-  int marginTop = 150;
+//  int marginTop = 300; //SANDBOX
+  int marginTop = 150; //SANDBOX
   PFont font = createFont("Arial", 16, true);
-  textFont(font, 24);
   fill(0);
+  //SANDBOX
+  /*
+  textFont(font, 40);
+  text("Level " + gameController.getCurrentLevel().getNumber(), playingFieldWidth + marginLeft, 180);
+  textFont(font, 16);
+  text("Goal: " + gameController.getCurrentLevel().getDescription(), playingFieldWidth + marginLeft, 220);
+  */
+  textFont(font, 24);
   text("Inventory", playingFieldWidth + marginLeft, marginTop);
   int inventoryX = playingFieldWidth + marginLeft;
   int inventoryY = marginTop + itemMargin;
@@ -314,17 +351,19 @@ void drawMenu() {
     image(curtainLeft, leftX, 0, 500, 700);
     image(curtainRight, rightX, 0, 500, 700);
   }
+  if (!curtainOpen && !curtainMoving) {
+    image(logo, 100, 50);
+  }
 }
 
-/** on iOS, the first audio playback has to be triggered
-* directly by a user interaction
-* so the first time they tap the screen, 
-* we play everything once
-* we could be nice and mute it first but you can do that... 
-*/
 void mousePressed() {
   if (!curtainOpen && !curtainMoving) {
     curtainMoving = true;
+    if (wonTheGame) {
+      wonTheGame = false;
+      audioFirstLevelStarted = false;
+      gameController.playLevel(1);
+    }
   } else {
     int buttonRadius = 23;
     if (dist(mouseX, mouseY, playX, playY) <= buttonRadius) {
@@ -355,9 +394,9 @@ void mousePressed() {
       boolean clickOnPlaceableItem = false;
       if (!gameController.isRunning()) {
         for (Item item : gameController.getCurrentLevel().getInventory().getItemsInUse()) {
-          Vec2 screenPosition = Util.physics.worldToScreen(item.getBody().getPosition().x, item.getBody().getPosition().y);
-          int topLeftX = screenPosition.x - (item.getImage().width / 2);
-          int topLeftY = screenPosition.y - (item.getImage().height / 2);
+          Vec2 screenPosition = new Vec2(item.getPlacedGridX() * Util.GRID_SIZE, item.getPlacedGridY() * Util.GRID_SIZE);
+          int topLeftX = screenPosition.x;
+          int topLeftY = screenPosition.y;
           if (mouseX >= topLeftX && mouseX <= topLeftX + item.getImage().width
               && mouseY >= topLeftY && mouseY <= topLeftY + item.getImage().height) {
             clickOnPlaceableItem = true;
@@ -388,19 +427,12 @@ void mousePressed() {
       }
     }
   }
-  /*
-  if (!userHasTriggeredAudio) {
-    //player.play();
-    userHasTriggeredAudio = true;
-  }*/
 }
 
 void mouseDragged() {
   
 }
 
-// when we release the mouse, apply an impulse based 
-// on the distance from the droid to the catapult
 void mouseReleased() {
   if (itemDragged != null) {
     int gridX = getGridX(mouseX - dragAnchorDeltaX);
@@ -478,53 +510,39 @@ void gameRenderer(World world) {
   }
 }
 
-// This method gets called automatically when 
-// there is a collision
+// This method gets called automatically when there is a collision
 void collision(Body body1, Body body2, float impulse) {
   Item item1 = gameController.getItem(body1);
   Item item2 = gameController.getItem(body2);
   if (item1 != null && item2 != null) {
     if (gameController.getCurrentLevel().isGoalCollision(item1, item2)) {
-      console.log("Yippie, goal reached!");
+      levelCompleted = true;
+      levelCompletedStart = millis();
+      audioCenter.playSound(SoundType.CHEERING);
     }
-  }
-  
-  /*
-  if ((b1 == droid && b2.getMass() > 0)
-    || (b2 == droid && b1.getMass() > 0))
-  {
-    if (impulse > 1.0)
-    {
-      score += 1;
-    }
-  }
-  
-  if (impulse > 15.0){ //only play a sound if the force is strong enough ... otherwise we get too many sounds playing at once
-  
-    // test for droid
-    if (b1.getMass() == 0 || b2.getMass() == 0) {// b1 or b2 are walls
-      // wall sound
-      //println("wall "+(impulse / 1000));
-      wallSound.cue(0);
-      wallSound.speed(impulse / 1000);// 
-      wallSound.play();
-    }
-    if (b1 == droid || b2 == droid) { // b1 or b2 are the droid
-      // droid sound
-      //println("droid");
-      droidSound.cue(0);
-      droidSound.speed(impulse / 1000);
-      droidSound.play();
-    }
-    for (int i=0;i<crates.length;i++) {
-      if (b1 == crates[i] || b2 == crates[i]) {// its a crate
-        crateSounds[i].cue(0);
-        crateSounds[i].speed(0.25 + (impulse / 250));// 10000 as the crates move slower??
-        crateSounds[i].play();
+    if (item1.getType() == ItemType.TRAMPOLINE || item2.getType() == ItemType.TRAMPOLINE) {
+      Item trampoline, ball;
+      if (item1.getType() == ItemType.TRAMPOLINE) {
+        trampoline = item1;
+        ball = item2;
+      } else {
+        trampline = item2;
+        ball = item1;
+      }
+      int ballBottomY = physics.worldToScreen(ball.getBody().getWorldCenter()).y + (ball.getScreenHeight() / 2);
+      int trampolineTopY = physics.worldToScreen(trampoline.getBody().getWorldCenter()).y - (trampoline.getScreenHeight() / 2);
+      if (ballBottomY <= trampolineTopY) {
+        //TODO: make relative to current y speed.
+        Vec2 impulse = new Vec2(0, -12);
+        ball.getBody().applyImpulse(impulse, ball.getBody().getWorldCenter());
+        audioCenter.playSound(SoundType.HIT_TRAMPOLINE);
       }
     }
-  
-  }*/
-  //
+    if (item1.getType() == ItemType.WOODEN_BEAM || item2.getType() == ItemType.WOODEN_BEAM ||
+        item1.getType() == ItemType.DIAGONAL_BEAM || item2.getType() == ItemType.DIAGONAL_BEAM ||
+        item1.getType() == ItemType.DIAGONAL_BEAM_REVERSED || item2.getType() == ItemType.DIAGONAL_BEAM_REVERSED) {
+      audioCenter.playSound(SoundType.HIT_WOOD);
+    }
+  }
 }
 

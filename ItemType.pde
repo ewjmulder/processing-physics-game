@@ -26,6 +26,8 @@ public class ItemType {
   public static final ItemType BOWLING_BALL = new ItemType("Bowling ball", Shape.CIRCLE, null, 0.1, false, loadImage("items/bowling_ball.png"), 60, 60);
   public static final ItemType WOODEN_BEAM = new ItemType("Wooden beam", Shape.RECTANGLE, null, 0.5, true, loadImage("items/wooden_beam.png"), 200, 20);
   public static final ItemType DIAGONAL_BEAM = new ItemType("Diagonal beam", Shape.POLYGON, new int[] {0, 14, 14, 0, 100, 86, 86, 100}, 0.5, true, loadImage("items/diagonal_beam.png"), 100, 100);
+  public static final ItemType DIAGONAL_BEAM_REVERSED = new ItemType("Diagonal beam reversed", Shape.POLYGON, new int[] {86, 0, 100, 14, 14, 100, 0, 86}, 0.5, true, loadImage("items/diagonal_beam_reversed.png"), 100, 100);
+  public static final ItemType TRAMPOLINE = new ItemType("Trampoline", Shape.RECTANGLE, null, 0.5, true, loadImage("items/trampoline.png"), 120, 60);
   
   private String name;
   private Shape shape;

@@ -1,0 +1,44 @@
+<<start with sandbox screen>>
+
+Hi there and welcome back. In this video I will present an in depth view of my physics game.
+If you did not watch the original assignment video, please do so first.
+
+I had the feeling my original video was too short to cover all the topics. So let's see so more
+features in action. I created this sandbox environment to play around with and make it easier to show
+some concepts.
+
+First of all: let me demonstrate the variation in bounciness. Let's create a soccer ball over here
+and a bowling ball at the same height. Now drop them both, and we clearly see the soccer ball bounce
+higher and longer than the bowling ball. This is done by setting the so called restitution of a body.
+
+Now you might have noticed this already, but the playing field consists of a grid of blocks of 20 by 20 pixels.
+Every item in the game has a width and height that are a multiple of 20. This way you can easily align your items
+and it also makes reasoning and calculations in the code a lot simpler. I think this little trick is very important to
+get the kind of gameplay that I'm looking for. Let's see it in action. <<place beams>> same height. 
+Overlap detection, place next to each other, in corners, etc. As you can see, it's possible to
+drag already placed items to a new position, by just grabbing them.
+
+Furthermore, I used polygon shapes besides just circles and rectangles. I had big plans for complicated shapes,
+but due to time constraints I only got the diagonal beam in place. It looks like a rotated rectangle, but actually
+it's a polygon of the diagonal shape. This way we have an 'block' shape that fits nicely into our grid system.
+
+Then there are a few more buttons on screen that I didn't use in the original video. Let's have a look at them.
+This one is quite interesting: it shows the debug drawing mode of the physics engine. When you somehow did'n align
+your image properly to the position in the physics engine, you can easily detect that with this feature. As you
+can see, all is looking well for these items.
+
+The red cross over here will not only reset the simulation, but also wipe all placed items and put them back in the inventory.
+This is a nice way to reset the level if you are stuck. 
+
+The last button is just for showing the menu.
+
+Well, that's it for now. There is much more to tell about the source code, but I won't bother you with details anymore,
+let's create something fun in the sandbox! :)
+
+Let's see, how about a funnel, with 2 trampolines at the bottom and a few balls to bounce around...
+<<create level>>
+<<start>>
+<<speed up>>
+
+Ok, that was fun. Thanks for watching, bye!
+

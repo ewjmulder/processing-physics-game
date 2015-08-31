@@ -1,0 +1,44 @@
+Hallo viewer, and welcome to this video of my second assignment for the Coursera Course on Creative Programming.
+When I saw that week 4 was about making a physics game, I immediately recalled a great game that I played when I was a kid.
+It's from the mid 90's and it's called 'The Incredible Machine'. The idea of this game is to create a line of progressing physical interactions
+that in the end lead to a certain goal. I tried to recreate it in Processing. I spend quite some time on the gameplay
+and I think it turned out pretty well. But I'm not really an artist, so please don't focus on the retro graphics :)
+
+Let's fire up the game an see what it looks like...
+
+We start out with a menu screen and the game music starts to play. We'll open the theatre curtains to reveal level 1.
+Ok, some basics first. On the left here we see our playing field, currently quite empty, but we'll change that later.
+On the right we see a series of buttons to start and stop the simuation. Below that we can read this is level 1
+and the goal is to let the socces ball hit the target, that is the circle in the top right of the playing field.
+And most importantly, we can see our inventory. These are the pieces of the puzzle we have to complete to be able to
+reach the goal.
+
+Let's start the simulation as it is now. <<click play>> The ball falls down, but does not bounce back high enough to reach the target.
+We can pause the simulation <<pause>>, and play further <<play>>. We can also stop the simulation <<stop>>, which means
+set it back to it's starting position. Now we want use our inventory to complete the level. As you probably guessed, the solution
+to level 1 is pretty easy. We just place these wooden beams at the top here, so the ball can roll to the target.
+<<place beams>>
+As you can see we can drag the items from the inventory to the playing field and the game will tell us where we can and cannot place the
+items, by showing a red cross when we overlap with other items. Ok, I think this should do it, let's run again. <<play>>
+The ball rolls gently to the target and yes, <<sound>> we did it! You hear some nice cheering to celebrate.
+
+But oh, look, the next level already started, and it has a cool new retro song. A bit more complicated now.
+Let's run the simulation again tot see what happens. <<play>>
+Hmm, the bowling ball just falls down. I guess we have to place some ramps to get it rolling down through all those corridors.
+Let's do that <place>> now ... pretty straightforward, just place a ramp at every end. Now we can start rolling! <<play>
+That's a little slow, but don't worry, we can speed up the simulation with this button here.
+Now it's much quicker and ... and ... yes, we did it again!
+
+All right, level 3, the final level. Nice song for this one as well! A new item appears in our inventory, it is a trampoline.
+I guess we can use it for some extra bouncing force.
+Let's place the first one about here <<place>> and run the simulation to get a feeling on where to place the second one.
+<<play>> Hmm, let's try it here <<fiddle>>
+
+Yeah, we completed the game, well done! The crowd goes wild! :)
+
+Of course this is a relatively short and simple implementation, but what else whould you expect in 1 week time? 
+You can easily imagine this concept being expanded to include more levels, more items and more types of interaction.
+If you're interested in how things work under the hood, please have a look at the description of this video for more information.
+
+For now, thanks for watching! I hope I've transferred some of my enthousiasm for this kind of gameplay to you!
+

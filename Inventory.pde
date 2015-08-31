@@ -36,6 +36,7 @@ public class Inventory {
     }
     this.itemsInInventory.remove(item);
     this.itemsUsed.add(item);
+    item.getBody().setActive(true);
     return item;
   }
   
@@ -43,6 +44,7 @@ public class Inventory {
     if (!this.itemsUsed.contains(item)) {
       console.error("Stop using an item that is not in the itemsUsed");
     }
+    item.getBody().setActive(false);
     item.resetGridPosition();
     this.itemsUsed.remove(item);
     this.itemsInInventory.add(item);
@@ -50,6 +52,7 @@ public class Inventory {
 
   public void resetUsedItems() {
     for (Item item : new ArrayList<Item>(this.itemsUsed)) {
+      item.getBody().setActive(false);
       item.resetGridPosition();
       this.itemsUsed.remove(item);
       this.itemsInInventory.add(item);

@@ -22,7 +22,7 @@ public class Item {
 
   // Use this constructor for non-placeable items, that have a fixed position.
   public Item(ItemType type, int startGridX, int startGridY) {
-    console.log("constructor Item(" + type + ", " + startGridX + ", " + startGridY + ")");
+    //console.log("constructor Item(" + type + ", " + startGridX + ", " + startGridY + ")");
     this.type = type;
     this.placeable = false;
     this.startGridX = startGridX;
@@ -45,6 +45,7 @@ public class Item {
       this.body = Util.physics.createCircle(screenX, screenY, this.type.getScreenWidth() / 2);
     }
     this.body.GetFixtureList().SetRestitution(this.type.getRestitution());
+    this.body.setActive(false);
     if (this.type.isStatic()) {
       this.body.setType(Body.b2_staticBody);
     }
@@ -133,6 +134,21 @@ public class Item {
     if  (this.type.getShape() != Shape.POLYGON) {
       Vec2 position = new Vec2(Util.GRID_SIZE * gridX + this.getScreenWidth() / 2, Util.GRID_SIZE * gridY + this.getScreenHeight() / 2);
       this.body.setPosition(Util.physics.screenToWorld(position.x, position.y));
+    } else {
+      int screenX = Util.GRID_SIZE * gridX;
+      int screenY = Util.GRID_SIZE * gridY;
+      // Recalculate to absolute screen coordinates. This is needed, because using the screenX and screenY as position of the polygon body causes bugs in box2d.
+      int[] screenCoordinates = new int[this.type.getVertices().length];
+      for (int index; index < screenCoordinates.length; index += 2) {
+        screenCoordinates[index] = screenX + this.type.getVertices()[index];
+        screenCoordinates[index + 1] = screenY + this.type.getVertices()[index + 1];
+      }
+      Util.physics.removeBody(this.body);
+      this.body = Util.physics.createPolygon(screenCoordinates);
+      this.body.GetFixtureList().SetRestitution(this.type.getRestitution());
+      if (this.type.isStatic()) {
+        this.body.setType(Body.b2_staticBody);
+      }
     }
   }    
   

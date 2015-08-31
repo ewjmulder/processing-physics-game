@@ -59,8 +59,20 @@ public class GameController {
     return this.levels.get(number);
   }
 
+  //TODO: Dynamically add/remove body's from the physics engine. Seems not to be an option. So other option is completely new physics for every level or move non-level items out of the way.
   public void playLevel(int number) {
     this.currentLevel = this.getLevel(number);
+    for (Level level : levels.values()) {
+      if (level == currentLevel) {
+        for (Item item : level.getItemsInSimulation()) {
+          item.getBody().setActive(true);
+        }
+      } else {
+        for (Item item : level.getAllItems()) {
+          item.getBody().setActive(false);
+        }
+      }
+    }
   }
   
   public boolean isPlaying() {
@@ -86,6 +98,9 @@ public class GameController {
     if (this.canPlay()) {
       this.simulationPaused = false;
       this.inStartingPosition = false;
+      for (Item item : this.currentLevel.getItemsInSimulation()) {
+        item.getBody().setAwake(true);
+      }
     }
   }
 
